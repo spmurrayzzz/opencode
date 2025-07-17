@@ -1,7 +1,10 @@
 package chat
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/v2/viewport"
@@ -28,6 +31,9 @@ type MessagesComponent interface {
 	GotoTop() (tea.Model, tea.Cmd)
 	GotoBottom() (tea.Model, tea.Cmd)
 	CopyLastMessage() (tea.Model, tea.Cmd)
+	Upvote() (tea.Model, tea.Cmd)
+	Downvote() (tea.Model, tea.Cmd)
+	ExportKTO() (tea.Model, tea.Cmd)
 }
 
 type messagesComponent struct {
@@ -618,6 +624,99 @@ func (m *messagesComponent) CopyLastMessage() (tea.Model, tea.Cmd) {
 	cmds = append(cmds, m.app.SetClipboard(lastTextPart.Text))
 	cmds = append(cmds, toast.NewSuccessToast("Message copied to clipboard"))
 	return m, tea.Batch(cmds...)
+}
+
+func (m *messagesComponent) getCurrentMessage() *app.Message {
+	if len(m.app.Messages) == 0 {
+		return nil
+	}
+	// For now, we'll use the last assistant message
+	// In the future, we could track the currently selected message
+	for i := len(m.app.Messages) - 1; i >= 0; i-- {
+		msg := m.app.Messages[i]
+		if _, ok := msg.Info.(opencode.AssistantMessage); ok {
+			return &msg
+		}
+	}
+	return nil
+}
+
+func (m *messagesComponent) Upvote() (tea.Model, tea.Cmd) {
+	msg := m.getCurrentMessage()
+	if msg == nil {
+		return m, toast.NewErrorToast("No assistant message to upvote")
+	}
+
+	sessionID := m.app.Session.ID
+	// Get message ID based on message type
+	var messageID string
+	switch casted := msg.Info.(type) {
+	case opencode.AssistantMessage:
+		messageID = casted.ID
+	case opencode.UserMessage:
+		messageID = casted.ID
+	default:
+		return m, toast.NewErrorToast("Unknown message type")
+	}
+	
+	// Send feedback to API
+	_, err := m.app.API().Session.SendFeedback(context.Background(), sessionID, messageID, "upvote")
+	if err != nil {
+		return m, toast.NewErrorToast("Failed to upvote message: " + err.Error())
+	}
+	
+	return m, toast.NewSuccessToast("Message upvoted")
+}
+
+func (m *messagesComponent) Downvote() (tea.Model, tea.Cmd) {
+	msg := m.getCurrentMessage()
+	if msg == nil {
+		return m, toast.NewErrorToast("No assistant message to downvote")
+	}
+
+	sessionID := m.app.Session.ID
+	// Get message ID based on message type
+	var messageID string
+	switch casted := msg.Info.(type) {
+	case opencode.AssistantMessage:
+		messageID = casted.ID
+	case opencode.UserMessage:
+		messageID = casted.ID
+	default:
+		return m, toast.NewErrorToast("Unknown message type")
+	}
+	
+	// Send feedback to API
+	_, err := m.app.API().Session.SendFeedback(context.Background(), sessionID, messageID, "downvote")
+	if err != nil {
+		return m, toast.NewErrorToast("Failed to downvote message: " + err.Error())
+	}
+	
+	return m, toast.NewSuccessToast("Message downvoted")
+}
+
+func (m *messagesComponent) ExportKTO() (tea.Model, tea.Cmd) {
+	sessionID := m.app.Session.ID
+	
+	// Export KTO data
+	data, err := m.app.API().Session.ExportSessionKTO(context.Background(), sessionID)
+	if err != nil {
+		return m, toast.NewErrorToast("Failed to export KTO data: " + err.Error())
+	}
+	
+	// Save to file
+	filename := fmt.Sprintf("opencode-kto-%s.json", sessionID)
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return m, toast.NewErrorToast("Failed to encode KTO data: " + err.Error())
+	}
+	
+	err = os.WriteFile(filename, jsonData, 0644)
+	if err != nil {
+		return m, toast.NewErrorToast("Failed to save KTO data: " + err.Error())
+	}
+	
+	return m, toast.NewSuccessToast(fmt.Sprintf("KTO data exported to %s", filename))
 }
 
 func NewMessagesComponent(app *app.App) MessagesComponent {

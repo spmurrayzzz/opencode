@@ -119,6 +119,9 @@ const (
 	MessagesLayoutToggleCommand CommandName = "messages_layout_toggle"
 	MessagesCopyCommand         CommandName = "messages_copy"
 	MessagesRevertCommand       CommandName = "messages_revert"
+	MessagesUpvoteCommand       CommandName = "messages_upvote"
+	MessagesDownvoteCommand     CommandName = "messages_downvote"
+	MessagesExportKTOCommand    CommandName = "messages_export_kto"
 	AppExitCommand              CommandName = "app_exit"
 )
 
@@ -331,6 +334,22 @@ func LoadFromConfig(config *opencode.Config) CommandRegistry {
 			Name:        MessagesRevertCommand,
 			Description: "revert message",
 			Keybindings: parseBindings("<leader>r"),
+		},
+		{
+			Name:        MessagesUpvoteCommand,
+			Description: "upvote current message",
+			Keybindings: parseBindings("<leader>+"),
+		},
+		{
+			Name:        MessagesDownvoteCommand,
+			Description: "downvote current message",
+			Keybindings: parseBindings("<leader>-"),
+		},
+		{
+			Name:        MessagesExportKTOCommand,
+			Description: "export conversation as KTO dataset",
+			Keybindings: parseBindings("<leader>k"),
+			Trigger:     []string{"kto"},
 		},
 		{
 			Name:        AppExitCommand,

@@ -996,6 +996,18 @@ func (a appModel) executeCommand(command commands.Command) (tea.Model, tea.Cmd) 
 		a.messages = updated.(chat.MessagesComponent)
 		cmds = append(cmds, cmd)
 	case commands.MessagesRevertCommand:
+	case commands.MessagesUpvoteCommand:
+		updated, cmd := a.messages.Upvote()
+		a.messages = updated.(chat.MessagesComponent)
+		cmds = append(cmds, cmd)
+	case commands.MessagesDownvoteCommand:
+		updated, cmd := a.messages.Downvote()
+		a.messages = updated.(chat.MessagesComponent)
+		cmds = append(cmds, cmd)
+	case commands.MessagesExportKTOCommand:
+		updated, cmd := a.messages.ExportKTO()
+		a.messages = updated.(chat.MessagesComponent)
+		cmds = append(cmds, cmd)
 	case commands.AppExitCommand:
 		return a, tea.Quit
 	}

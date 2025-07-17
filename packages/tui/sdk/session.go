@@ -148,6 +148,35 @@ func (r *SessionService) Unshare(ctx context.Context, id string, opts ...option.
 	return
 }
 
+// SendFeedback stores feedback (upvote/downvote) for a specific message
+func (r *SessionService) SendFeedback(ctx context.Context, sessionID string, messageID string, feedback string, opts ...option.RequestOption) (res *SessionFeedbackResponse, err error) {
+	opts = append(r.Options[:], opts...)
+	if sessionID == "" {
+		err = errors.New("missing required sessionID parameter")
+		return
+	}
+	if messageID == "" {
+		err = errors.New("missing required messageID parameter")
+		return
+	}
+	path := fmt.Sprintf("session/%s/message/%s/feedback", sessionID, messageID)
+	body := SessionFeedbackParams{Feedback: feedback}
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return
+}
+
+// ExportSessionKTO exports session as KTO dataset for training
+func (r *SessionService) ExportSessionKTO(ctx context.Context, sessionID string, opts ...option.RequestOption) (res *[]KTOData, err error) {
+	opts = append(r.Options[:], opts...)
+	if sessionID == "" {
+		err = errors.New("missing required sessionID parameter")
+		return
+	}
+	path := fmt.Sprintf("session/%s/export/kto", sessionID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return
+}
+
 type AssistantMessage struct {
 	ID         string                 `json:"id,required"`
 	Cost       float64                `json:"cost,required"`
@@ -1004,6 +1033,90 @@ func (r StepStartPartType) IsKnown() bool {
 		return true
 	}
 	return false
+}
+
+// SessionFeedbackParams represents the request body for sending feedback
+type SessionFeedbackParams struct {
+	Feedback string `json:"feedback"`
+}
+
+func (r SessionFeedbackParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+// SessionFeedbackResponse represents the response from sending feedback
+type SessionFeedbackResponse struct {
+	Success  bool            `json:"success"`
+	Feedback MessageFeedback `json:"feedback"`
+	JSON     sessionFeedbackResponseJSON `json:"-"`
+}
+
+// sessionFeedbackResponseJSON contains the JSON metadata for the struct [SessionFeedbackResponse]
+type sessionFeedbackResponseJSON struct {
+	Success     apijson.Field
+	Feedback    apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *SessionFeedbackResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r sessionFeedbackResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+// MessageFeedback represents feedback for a message
+type MessageFeedback struct {
+	MessageID string `json:"messageId"`
+	SessionID string `json:"sessionId"`
+	Feedback  string `json:"feedback"`
+	Timestamp int64  `json:"timestamp"`
+	JSON      messageFeedbackJSON `json:"-"`
+}
+
+// messageFeedbackJSON contains the JSON metadata for the struct [MessageFeedback]
+type messageFeedbackJSON struct {
+	MessageID   apijson.Field
+	SessionID   apijson.Field
+	Feedback    apijson.Field
+	Timestamp   apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *MessageFeedback) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r messageFeedbackJSON) RawJSON() string {
+	return r.raw
+}
+
+// KTOData represents a single entry in the KTO dataset
+type KTOData struct {
+	Input      string `json:"input"`
+	Completion string `json:"completion"`
+	Signal     bool   `json:"signal"`
+	JSON       ktoDataJSON `json:"-"`
+}
+
+// ktoDataJSON contains the JSON metadata for the struct [KTOData]
+type ktoDataJSON struct {
+	Input       apijson.Field
+	Completion  apijson.Field
+	Signal      apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *KTOData) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r ktoDataJSON) RawJSON() string {
+	return r.raw
 }
 
 type TextPart struct {

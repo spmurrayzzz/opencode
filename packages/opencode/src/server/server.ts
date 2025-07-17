@@ -17,6 +17,9 @@ import { File } from "../file"
 import { LSP } from "../lsp"
 import { MessageV2 } from "../session/message-v2"
 import { Mode } from "../session/mode"
+import { FeedbackType, MessageFeedback, KTOData } from "../session/types"
+import { sessionFeedback } from "../storage/namespace"
+import { exportSessionAsKTO } from "../session/export"
 
 const ERRORS = {
   400: {
@@ -466,6 +469,151 @@ export namespace Server {
           const body = c.req.valid("json")
           const msg = await Session.chat({ ...body, sessionID })
           return c.json(msg)
+        },
+      )
+      .post(
+        "/session/:id/message/:messageId/feedback",
+        describeRoute({
+          description: "Store feedback (upvote/downvote) for a specific message",
+          responses: {
+            200: {
+              description: "Successfully stored feedback",
+              content: {
+                "application/json": {
+                  schema: resolver(
+                    z.object({
+                      success: z.boolean(),
+                      feedback: MessageFeedback,
+                    })
+                  ),
+                },
+              },
+            },
+            400: {
+              description: "Invalid feedback type",
+              content: {
+                "application/json": {
+                  schema: resolver(z.object({ error: z.string(), details: z.any() })),
+                },
+              },
+            },
+          },
+        }),
+        zValidator(
+          "param",
+          z.object({
+            id: z.string().openapi({ description: "Session ID" }),
+            messageId: z.string().openapi({ description: "Message ID" }),
+          }),
+        ),
+        zValidator(
+          "json",
+          z.object({
+            feedback: FeedbackType,
+          }),
+        ),
+        async (c) => {
+          const { id, messageId } = c.req.valid("param")
+          const { feedback } = c.req.valid("json")
+          
+          const feedbackData: MessageFeedback = {
+            messageId,
+            sessionId: id,
+            feedback,
+            timestamp: Date.now(),
+          }
+          
+          await sessionFeedback.write(`${id}/${messageId}`, feedbackData)
+          
+          return c.json({ success: true, feedback: feedbackData })
+        },
+      )
+      .get(
+        "/session/:id/message/:messageId/feedback",
+        describeRoute({
+          description: "Get feedback for a specific message",
+          responses: {
+            200: {
+              description: "Feedback data",
+              content: {
+                "application/json": {
+                  schema: resolver(
+                    z.object({
+                      feedback: MessageFeedback.nullable(),
+                    })
+                  ),
+                },
+              },
+            },
+          },
+        }),
+        zValidator(
+          "param",
+          z.object({
+            id: z.string().openapi({ description: "Session ID" }),
+            messageId: z.string().openapi({ description: "Message ID" }),
+          }),
+        ),
+        async (c) => {
+          const { id, messageId } = c.req.valid("param")
+          const feedback = await sessionFeedback.read(`${id}/${messageId}`)
+          
+          return c.json({ feedback: feedback || null })
+        },
+      )
+      .delete(
+        "/session/:id/message/:messageId/feedback",
+        describeRoute({
+          description: "Remove feedback for a specific message",
+          responses: {
+            200: {
+              description: "Successfully removed feedback",
+              content: {
+                "application/json": {
+                  schema: resolver(z.object({ success: z.boolean() })),
+                },
+              },
+            },
+          },
+        }),
+        zValidator(
+          "param",
+          z.object({
+            id: z.string().openapi({ description: "Session ID" }),
+            messageId: z.string().openapi({ description: "Message ID" }),
+          }),
+        ),
+        async (c) => {
+          const { id, messageId } = c.req.valid("param")
+          await sessionFeedback.remove(`${id}/${messageId}`)
+          return c.json({ success: true })
+        },
+      )
+      .get(
+        "/session/:id/export/kto",
+        describeRoute({
+          description: "Export session as KTO dataset for training",
+          responses: {
+            200: {
+              description: "KTO dataset",
+              content: {
+                "application/json": {
+                  schema: resolver(KTOData.array()),
+                },
+              },
+            },
+          },
+        }),
+        zValidator(
+          "param",
+          z.object({
+            id: z.string().openapi({ description: "Session ID" }),
+          }),
+        ),
+        async (c) => {
+          const { id } = c.req.valid("param")
+          const ktoData = await exportSessionAsKTO(id)
+          return c.json(ktoData)
         },
       )
       .get(

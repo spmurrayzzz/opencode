@@ -20,6 +20,7 @@
     "@standard-schema/spec": "1.0.0",
     "@tsconfig/bun": "1.0.7",
     "@types/bun": "latest",
+    "@types/node-fetch": "2.6.12",
     "@types/turndown": "5.0.5",
     "@types/yargs": "17.0.33",
     "typescript": "catalog:",

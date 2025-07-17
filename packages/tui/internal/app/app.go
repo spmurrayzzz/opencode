@@ -50,6 +50,11 @@ type App struct {
 	IsLeaderSequence bool
 }
 
+// API returns the opencode client for making API calls
+func (a *App) API() *opencode.Client {
+	return a.Client
+}
+
 type SessionCreatedMsg = struct {
 	Session *opencode.Session
 }

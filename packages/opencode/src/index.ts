@@ -17,6 +17,8 @@ import { DebugCommand } from "./cli/cmd/debug"
 import { StatsCommand } from "./cli/cmd/stats"
 import { McpCommand } from "./cli/cmd/mcp"
 import { InstallGithubCommand } from "./cli/cmd/install-github"
+import { FeedbackCommand } from "./cli/cmd/feedback"
+import { ExportKTOCommand } from "./cli/cmd/export-kto"
 
 const cancel = new AbortController()
 
@@ -78,6 +80,8 @@ const cli = yargs(hideBin(process.argv))
   .command(ModelsCommand)
   .command(StatsCommand)
   .command(InstallGithubCommand)
+  .command(FeedbackCommand)
+  .command(ExportKTOCommand)
   .fail((msg) => {
     if (msg.startsWith("Unknown argument") || msg.startsWith("Not enough non-option arguments")) {
       cli.showHelp("log")
