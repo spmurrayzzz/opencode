@@ -135,3 +135,53 @@ const table = sqliteTable("session", {
   - Verify `bun dev` starts a server on port 4096 without errors.
   - Lint/format with Prettier: `bun run prettier --check .`.
   - Follow these steps to avoid CI failures and to make rapid, reliable changes.
+
+## Repository Overview
+
+**Root files** (top‑level):
+
+- AGENTS.md, CONTRIBUTING.md, LICENSE, README.\* (multiple locales), SECURITY.md, STATS.md, bun.lock, bunfig.toml, flake.lock, flake.nix, cloud/, github/, infra/, install/, logs/, nix/, node_modules/, package.json, packages/, patches/, script/, sdks/, specs/, sst-env.d.ts, sst.config.ts, themes/, tmp/, tsconfig.json, turbo.json.
+
+**README excerpt** (first 10 lines):
+
+```
+<p align="center">
+  <a href="https://opencode.ai">
+    <picture>
+      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+    </picture>
+  </a>
+</p>
+<p align="center">The open source AI coding agent.</p>
+```
+
+**Key source files**:
+
+- `packages/opencode/src/index.ts` – CLI entry point (command registration, logging, error handling). Example snippet:
+
+```
+const cli = yargs(hideBin(process.argv))
+  .scriptName("opencode")
+  .command(RunCommand)
+  .command(GenerateCommand)
+  // ... other commands
+await cli.parse()
+```
+
+- `packages/app/src/entry.tsx` – Web UI bootstrap (renders SolidJS app, sets up platform providers). Example snippet:
+
+```
+render(() => (
+  <PlatformProvider value={platform}>
+    <AppBaseProviders>
+      <AppInterface />
+    </AppBaseProviders>
+  </PlatformProvider>
+), document.getElementById("root"))
+```
+
+- `packages/desktop/tauri.conf.json` – Tauri build configuration for native desktop client.
+
+These references give agents quick insight into the repository’s structure, key entry points, and where to locate configuration files without extensive searching.
