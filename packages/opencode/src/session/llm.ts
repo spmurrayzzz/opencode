@@ -128,7 +128,6 @@ export namespace LLM {
         temperature: input.model.capabilities.temperature
           ? (input.agent.temperature ?? ProviderTransform.temperature(input.model))
           : undefined,
-        topP: input.agent.topP ?? ProviderTransform.topP(input.model),
         topK: ProviderTransform.topK(input.model),
         options,
       },
@@ -208,7 +207,6 @@ export namespace LLM {
         }
       },
       temperature: params.temperature,
-      topP: params.topP,
       topK: params.topK,
       providerOptions: ProviderTransform.providerOptions(input.model, params.options),
       activeTools: Object.keys(tools).filter((x) => x !== "invalid"),
